@@ -75,20 +75,6 @@
     top: 20px;
     left: 20px;
   }
-  .glitch {
-    animation: glitch 1s linear infinite;
-    position: relative;
-  }
-  @keyframes glitch {
-    2%, 64% {
-      transform: translate(2px,0) skew(0deg);
-    }
-    4%, 60% {
-      transform: translate(-2px,0) skew(0deg);
-    }
-    62% {
-      transform: translate(0,0) skew(5deg); 
-    }
   }
 </style>
 </head>
@@ -123,7 +109,7 @@ const toggleControlsBtn = document.getElementById('toggleControlsBtn');
 let scene, camera, renderer, texture, mesh;
 let isAutoRotating = false;
 let autoRotateSpeed = 0.001;
-const defaultFOV = 70;
+const defaultFOV = 25;
 
 function init() {
   scene = new THREE.Scene();
