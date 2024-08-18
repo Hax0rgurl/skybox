@@ -1,4 +1,4 @@
-<html><head><base href="SkyBox Viewer App</title>
+﻿<html><head><base href="SkyBox Viewer App</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   body, html {
@@ -81,19 +81,19 @@
 <body>
 <div id="container">
   <div id="viewer">
-    <button id="fullscreenBtn">Fullscreen (F)</button>
-    <button id="toggleControlsBtn">Toggle HUD</button>
+    <button id="fullscreenBtn" class="glitch">Fullscreen (F)</button>
+    <button id="toggleControlsBtn" class="glitch">Toggle HUD</button>
   </div>
   <div id="controls">
     <div>
-      <button id="autoRotate">Auto Rotate</button>
-      <button id="reset">Reset View</button>
-      <input type="file" id="fileInput" accept=".png, .jpg, .jpeg", .webp, .webm, .mp4>
+      <button id="autoRotate" class="glitch">Auto Rotate</button>
+      <button id="reset" class="glitch">Reset View</button>
+      <input type="file" id="fileInput" accept=".png, .jpg, .jpeg" class="glitch">
     </div>
     <div id="info">
-      <p>Explore the skybox. Use mouse/touch to look around.</p>
-      <p>Press 'F' for immersive view. 'Esc' to exit.</p>
-      <p>Upload equirectangular images for custom environment.</p>
+      <p class="glitch">Explore the skybox. Use mouse/touch to look around.</p>
+      <p class="glitch">Press 'F' for immersive view. 'Esc' to exit.</p>
+      <p class="glitch">Upload 2:1 or 16:9 equirectangular image for custom environment.</p>
     </div>
   </div>
 </div>
@@ -108,13 +108,12 @@ const toggleControlsBtn = document.getElementById('toggleControlsBtn');
 
 let scene, camera, renderer, texture, mesh;
 let isAutoRotating = false;
-let autoRotateSpeed = 0.002;
-const defaultFOV = 75;
+let autoRotateSpeed = 0.001;
+const defaultFOV = 25;
 
 function init() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(defaultFOV, viewer.clientWidth / viewer.clientHeight, 0.1, 1000);
-  camera.position.set(0, 0, 0.1);
   
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(viewer.clientWidth, viewer.clientHeight);
@@ -128,7 +127,7 @@ function loadTexture(url) {
     texture = loadedTexture;
     texture.mapping = THREE.EquirectangularReflectionMapping;
 
-    const geometry = new THREE.SphereGeometry(100, 60, 40);
+    const geometry = new THREE.SphereGeometry(500, 60, 40);
     geometry.scale(-1, 1, 1);
     
     const material = new THREE.MeshBasicMaterial({map: texture});
@@ -164,14 +163,9 @@ function toggleAutoRotate() {
 }
 
 function resetView() {
-  camera.position.set(0, 0, 0);
+  camera.position.set(0, 0, 0.1);
   camera.rotation.set(0, 0, 0);
   camera.fov = defaultFOV;
-  camera.updateProjectionMatrix();
-}
-
-function updateFOV(newFOV) {
-  camera.fov = newFOV;
   camera.updateProjectionMatrix();
 }
 
@@ -287,9 +281,6 @@ function handleOrientation(event) {
     camera.quaternion.setFromEuler(new THREE.Euler(x, y, -z, 'YXZ'));
   }
 }
-
-init();
-animate();
 
 init();
 animate();
