@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Depth Map and SkyBox Viewer</title>
+    <title>360 Viewer with Depth Map and Recording</title>
     <style>
         body, html {
             margin: 0;
@@ -85,76 +85,73 @@
 </head>
 <body>
     <div id="viewer-container">
-        <div id="viewer"></div>
+        <canvas id="viewer"></canvas>
         <button id="fullscreenBtn">Fullscreen (F)</button>
         <button id="toggleControlsBtn">Toggle HUD</button>
         <div id="controls">
             <button id="zoom-in">Zoom In</button>
             <button id="zoom-out">Zoom Out</button>
-            <button id="record">Record Depth Map</button>
+            <button id="record-depth">Record Depth Map</button>
             <button id="autoRotate">Auto Rotate</button>
             <button id="reset">Reset View</button>
+            <button id="start-recording">Start 360 Recording</button>
+            <button id="stop-recording" disabled>Stop Recording</button>
             <input type="file" id="fileInput" accept=".png, .jpg, .jpeg, .webp, .webm, .mp4">
             <div id="info">
-                <p>Explore the skybox. Use mouse/touch to look around.</p>
+                <p>Explore the 360 view. Use mouse/touch to look around.</p>
                 <p>Press 'F' for immersive view. 'Esc' to exit.</p>
-                <p>Upload equirectangular images for custom environment.</p>
+                <p>Upload equirectangular images or videos for custom environment.</p>
             </div>
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
     <script>
-        let camera, scene, renderer, mesh;
+        let camera, scene, renderer, mesh, controls;
         let isAutoRotating = false;
-        let autoRotateSpeed = 0.002;
+        let autoRotateSpeed = 1;
         const defaultFOV = 75;
         let texture;
+        let mediaRecorder;
+        let recordedChunks = [];
 
         const sphereRadius = 500;
         let isUserInteracting = false;
-        let onPointerDownMouseX = 0, onPointerDownMouseY = 0;
-        let lon = 0, onPointerDownLon = 0;
-        let lat = 0, onPointerDownLat = 0;
-        let phi = 0, theta = 0;
+        let lon = 0, lat = 0;
 
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(defaultFOV, window.innerWidth / window.innerHeight, 0.1, 1000);
             
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('viewer'),
+                antialias: true 
+            });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            document.getElementById('viewer').appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableZoom = false;
+            controls.enablePan = false;
+            controls.rotateSpeed = -0.25;
 
             // Event listeners
             document.getElementById('zoom-in').addEventListener('click', zoomIn);
             document.getElementById('zoom-out').addEventListener('click', zoomOut);
-            document.getElementById('record').addEventListener('click', recordDepthMap);
+            document.getElementById('record-depth').addEventListener('click', recordDepthMap);
             document.getElementById('autoRotate').addEventListener('click', toggleAutoRotate);
             document.getElementById('reset').addEventListener('click', resetView);
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
             document.getElementById('fullscreenBtn').addEventListener('click', toggleFullScreen);
             document.getElementById('toggleControlsBtn').addEventListener('click', toggleControls);
+            document.getElementById('start-recording').addEventListener('click', startRecording);
+            document.getElementById('stop-recording').addEventListener('click', stopRecording);
 
             window.addEventListener('resize', onWindowResize, false);
             document.addEventListener('keydown', handleKeyDown);
             document.addEventListener('fullscreenchange', handleFullscreenChange);
 
-            // Touch and mouse events
-            const viewer = document.getElementById('viewer');
-            viewer.addEventListener('mousedown', onPointerDown);
-            viewer.addEventListener('mousemove', onPointerMove);
-            viewer.addEventListener('mouseup', onPointerUp);
-            viewer.addEventListener('touchstart', onPointerDown);
-            viewer.addEventListener('touchmove', onPointerMove);
-            viewer.addEventListener('touchend', onPointerUp);
-            viewer.addEventListener('wheel', onMouseWheel);
-
-            // Device orientation
-            if (window.DeviceOrientationEvent) {
-                window.addEventListener('deviceorientation', handleOrientation);
-            }
-
-            loadTexture('https://example.com/abandoned_muse_equirectangular.jpg');
+            // Load default texture
+            loadTexture('https://example.com/equirectangular_image.jpg');
 
             animate();
         }
@@ -162,9 +159,12 @@
         function animate() {
             requestAnimationFrame(animate);
             if (isAutoRotating) {
-                lon += autoRotateSpeed;
+                controls.autoRotate = true;
+                controls.autoRotateSpeed = autoRotateSpeed;
+            } else {
+                controls.autoRotate = false;
             }
-            updateCameraRotation();
+            controls.update();
             renderer.render(scene, camera);
         }
 
@@ -201,50 +201,45 @@
         }
 
         function resetView() {
-            lon = 0;
-            lat = 0;
-            updateCameraRotation();
+            controls.reset();
         }
 
-        function onPointerDown(event) {
-            isUserInteracting = true;
-            const clientX = event.clientX || (event.touches && event.touches[0].clientX);
-            const clientY = event.clientY || (event.touches && event.touches[0].clientY);
-            onPointerDownMouseX = clientX;
-            onPointerDownMouseY = clientY;
-            onPointerDownLon = lon;
-            onPointerDownLat = lat;
-        }
-
-        function onPointerMove(event) {
-            if (isUserInteracting) {
-                const clientX = event.clientX || (event.touches && event.touches[0].clientX);
-                const clientY = event.clientY || (event.touches && event.touches[0].clientY);
-                lon = (onPointerDownMouseX - clientX) * 0.1 + onPointerDownLon;
-                lat = (clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
-            }
-        }
-
-        function onPointerUp() {
-            isUserInteracting = false;
-        }
-
-        function onMouseWheel(event) {
-            const fov = camera.fov + event.deltaY * 0.05;
-            camera.fov = THREE.MathUtils.clamp(fov, 10, 75);
+        function zoomIn() {
+            camera.fov = Math.max(camera.fov - 5, 10);
             camera.updateProjectionMatrix();
         }
 
-        function updateCameraRotation() {
-            lat = Math.max(-85, Math.min(85, lat));
-            phi = THREE.MathUtils.degToRad(90 - lat);
-            theta = THREE.MathUtils.degToRad(lon);
+        function zoomOut() {
+            camera.fov = Math.min(camera.fov + 5, 75);
+            camera.updateProjectionMatrix();
+        }
 
-            camera.position.x = sphereRadius * Math.sin(phi) * Math.cos(theta);
-            camera.position.y = sphereRadius * Math.cos(phi);
-            camera.position.z = sphereRadius * Math.sin(phi) * Math.sin(theta);
+        function recordDepthMap() {
+            if (!texture) {
+                alert('Please load an image first.');
+                return;
+            }
 
-            camera.lookAt(scene.position);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = texture.image.width;
+            canvas.height = texture.image.height;
+            ctx.drawImage(texture.image, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const depthMap = new Uint8ClampedArray(imageData.data.length);
+
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const brightness = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
+                depthMap[i] = depthMap[i+1] = depthMap[i+2] = brightness;
+                depthMap[i+3] = 255;
+            }
+
+            ctx.putImageData(new ImageData(depthMap, canvas.width, canvas.height), 0, 0);
+            
+            const link = document.createElement('a');
+            link.download = 'depth_map.png';
+            link.href = canvas.toDataURL();
+            link.click();
         }
 
         function handleFileUpload(event) {
@@ -252,10 +247,41 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    loadTexture(e.target.result);
+                    if (file.type.startsWith('video')) {
+                        loadVideo(e.target.result);
+                    } else {
+                        loadTexture(e.target.result);
+                    }
                 };
                 reader.readAsDataURL(file);
             }
+        }
+
+        function loadVideo(url) {
+            const video = document.createElement('video');
+            video.src = url;
+            video.loop = true;
+            video.muted = true;
+            video.play();
+
+            const videoTexture = new THREE.VideoTexture(video);
+            videoTexture.minFilter = THREE.LinearFilter;
+            videoTexture.magFilter = THREE.LinearFilter;
+            videoTexture.format = THREE.RGBFormat;
+
+            const geometry = new THREE.SphereGeometry(sphereRadius, 60, 40);
+            geometry.scale(-1, 1, 1);
+            
+            const material = new THREE.MeshBasicMaterial({map: videoTexture});
+            
+            if (mesh) {
+                scene.remove(mesh);
+            }
+            
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            resetView();
         }
 
         function toggleFullScreen() {
@@ -288,87 +314,41 @@
             }
         }
 
-        function handleOrientation(event) {
-            if (event.alpha && event.beta && event.gamma) {
-                const x = THREE.MathUtils.degToRad(event.beta);
-                const y = THREE.MathUtils.degToRad(event.gamma);
-                const z = THREE.MathUtils.degToRad(event.alpha);
+        function startRecording() {
+            const stream = renderer.domElement.captureStream(30); // 30 FPS
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
 
-                camera.quaternion.setFromEuler(new THREE.Euler(x, y, -z, 'YXZ'));
-            }
-        }
-
-        function zoomIn() {
-            camera.fov = Math.max(camera.fov - 5, 10);
-            camera.updateProjectionMatrix();
-        }
-
-        function zoomOut() {
-            camera.fov = Math.min(camera.fov + 5, 75);
-            camera.updateProjectionMatrix();
-        }
-
-        function recordDepthMap() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = e => {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        const depthMap = createDepthMap(img);
-                        createMeshFromDepthMap(depthMap, img.width, img.height);
-                    }
-                    img.src = event.target.result;
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
                 }
-                reader.readAsDataURL(file);
-            }
-            input.click();
+            };
+
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = '360_recording.webm';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+            };
+
+            mediaRecorder.start();
+            document.getElementById('start-recording').disabled = true;
+            document.getElementById('stop-recording').disabled = false;
         }
 
-        function createDepthMap(img) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const depthMap = new Float32Array(imageData.width * imageData.height);
-
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                const brightness = (imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3;
-                depthMap[i/4] = brightness / 255;
-            }
-
-            return depthMap;
-        }
-
-        function createMeshFromDepthMap(depthMap, width, height) {
-            const geometry = new THREE.PlaneGeometry(width / 50, height / 50, width - 1, height - 1);
-            const vertices = geometry.attributes.position.array;
-
-            for (let i = 0, j = 2; i < depthMap.length; i++, j += 3) {
-                vertices[j] = depthMap[i] * 2; // Exaggerate depth for visibility
-            }
-
-            geometry.computeVertexNormals();
-
-            const material = new THREE.MeshPhongMaterial({
-                color: 0xcccccc,
-                wireframe: false,
-                side: THREE.DoubleSide,
-            });
-
-            if (mesh) scene.remove(mesh);
-            mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-
-            // Add lighting
-            const light = new THREE.DirectionalLight(0xffffff, 1);
-            light.position.set(0, 0, 1).normalize();
-            scene.add(light);
+        function stopRecording() {
+            mediaRecorder.stop();
+            recordedChunks = [];
+            document.getElementById('start-recording').disabled = false;
+            document.getElementById('stop-recording').disabled = true;
         }
 
         init();
