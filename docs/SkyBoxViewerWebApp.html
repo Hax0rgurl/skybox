@@ -109,7 +109,7 @@ const toggleControlsBtn = document.getElementById('toggleControlsBtn');
 let scene, camera, renderer, texture, mesh;
 let isAutoRotating = false;
 let autoRotateSpeed = 0.002;
-const defaultFOV = 10;
+const defaultFOV = 75;
 function init() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(defaultFOV, viewer.clientWidth / viewer.clientHeight, 0.1, 2000);
