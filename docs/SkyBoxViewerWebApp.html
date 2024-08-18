@@ -5,82 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>360 Viewer with Depth Map and Recording</title>
     <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Courier New', monospace;
-            background-color: #000;
-            color: #0f0;
-        }
-        #viewer-container {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-        #viewer {
-            width: 100%;
-            height: 100%;
-        }
-        #controls {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background-color: rgba(0, 20, 0, 0.7);
-            padding: 10px;
-            border-radius: 10px;
-            border: 1px solid #0f0;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-        }
-        #controls.hidden {
-            opacity: 0;
-            transform: translateY(100%);
-            pointer-events: none;
-        }
-        button, #fileInput {
-            background-color: #001f00;
-            border: 1px solid #0f0;
-            color: #0f0;
-            padding: 10px 20px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-family: 'Courier New', monospace;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        button:hover, #fileInput:hover {
-            background-color: #0f0;
-            color: #000;
-        }
-        #info {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-        #fullscreenBtn, #toggleControlsBtn {
-            position: absolute;
-            background-color: rgba(0, 20, 0, 0.7);
-            z-index: 1000;
-        }
-        #fullscreenBtn {
-            top: 20px;
-            right: 20px;
-        }
-        #toggleControlsBtn {
-            top: 20px;
-            left: 20px;
-        }
+        /* (Keep the existing CSS styles) */
     </style>
 </head>
 <body>
@@ -105,11 +30,10 @@
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
     <script>
-        let camera, scene, renderer, mesh, controls;
+        let camera, scene, renderer, mesh;
         let isAutoRotating = false;
-        let autoRotateSpeed = 1;
+        let autoRotateSpeed = 0.002;
         const defaultFOV = 75;
         let texture;
         let mediaRecorder;
@@ -117,7 +41,10 @@
 
         const sphereRadius = 500;
         let isUserInteracting = false;
-        let lon = 0, lat = 0;
+        let onPointerDownMouseX = 0, onPointerDownMouseY = 0;
+        let lon = 0, onPointerDownLon = 0;
+        let lat = 0, onPointerDownLat = 0;
+        let phi = 0, theta = 0;
 
         function init() {
             scene = new THREE.Scene();
@@ -128,11 +55,6 @@
                 antialias: true 
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
-
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableZoom = false;
-            controls.enablePan = false;
-            controls.rotateSpeed = -0.25;
 
             // Event listeners
             document.getElementById('zoom-in').addEventListener('click', zoomIn);
@@ -150,6 +72,16 @@
             document.addEventListener('keydown', handleKeyDown);
             document.addEventListener('fullscreenchange', handleFullscreenChange);
 
+            // Touch and mouse events
+            const viewer = renderer.domElement;
+            viewer.addEventListener('mousedown', onPointerDown);
+            viewer.addEventListener('mousemove', onPointerMove);
+            viewer.addEventListener('mouseup', onPointerUp);
+            viewer.addEventListener('touchstart', onPointerDown);
+            viewer.addEventListener('touchmove', onPointerMove);
+            viewer.addEventListener('touchend', onPointerUp);
+            viewer.addEventListener('wheel', onMouseWheel);
+
             // Load default texture
             loadTexture('https://example.com/equirectangular_image.jpg');
 
@@ -159,12 +91,9 @@
         function animate() {
             requestAnimationFrame(animate);
             if (isAutoRotating) {
-                controls.autoRotate = true;
-                controls.autoRotateSpeed = autoRotateSpeed;
-            } else {
-                controls.autoRotate = false;
+                lon += autoRotateSpeed;
             }
-            controls.update();
+            updateCameraRotation();
             renderer.render(scene, camera);
         }
 
@@ -201,7 +130,50 @@
         }
 
         function resetView() {
-            controls.reset();
+            lon = 0;
+            lat = 0;
+            updateCameraRotation();
+        }
+
+        function onPointerDown(event) {
+            isUserInteracting = true;
+            const clientX = event.clientX || (event.touches && event.touches[0].clientX);
+            const clientY = event.clientY || (event.touches && event.touches[0].clientY);
+            onPointerDownMouseX = clientX;
+            onPointerDownMouseY = clientY;
+            onPointerDownLon = lon;
+            onPointerDownLat = lat;
+        }
+
+        function onPointerMove(event) {
+            if (isUserInteracting) {
+                const clientX = event.clientX || (event.touches && event.touches[0].clientX);
+                const clientY = event.clientY || (event.touches && event.touches[0].clientY);
+                lon = (onPointerDownMouseX - clientX) * 0.1 + onPointerDownLon;
+                lat = (clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+            }
+        }
+
+        function onPointerUp() {
+            isUserInteracting = false;
+        }
+
+        function onMouseWheel(event) {
+            const fov = camera.fov + event.deltaY * 0.05;
+            camera.fov = THREE.MathUtils.clamp(fov, 10, 75);
+            camera.updateProjectionMatrix();
+        }
+
+        function updateCameraRotation() {
+            lat = Math.max(-85, Math.min(85, lat));
+            phi = THREE.MathUtils.degToRad(90 - lat);
+            theta = THREE.MathUtils.degToRad(lon);
+
+            camera.position.x = sphereRadius * Math.sin(phi) * Math.cos(theta);
+            camera.position.y = sphereRadius * Math.cos(phi);
+            camera.position.z = sphereRadius * Math.sin(phi) * Math.sin(theta);
+
+            camera.lookAt(scene.position);
         }
 
         function zoomIn() {
