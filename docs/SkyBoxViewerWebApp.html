@@ -1,297 +1,297 @@
 <html><head><base href="SkyBox Viewer App</title>
- <meta name="viewport" content="width=device-width, initial-scale=1">
- <style>
-   body, html {
-     margin: 0;
-     padding: 0;
-     width: 100%;
-     height: 100%;
-     overflow: hidden;
-     font-family: 'Courier New', monospace;
-     background-color: #000;
-     color: #0f0;
-   }
-   #container {
-     width: 100%;
-     height: 100%;
-     display: flex;
-     flex-direction: column;
-   }
-   #viewer {
-     width: 100%;
-     height: 100%;
-     position: relative;
-   }
-   #controls {
-     position: absolute;
-     bottom: 20px;
-     left: 20px;
-     right: 20px;
-     background-color: rgba(0, 20, 0, 0.7);
-     padding: 10px;
-     border-radius: 10px;
-     border: 1px solid #0f0;
-     transition: opacity 0.3s ease, transform 0.3s ease;
-   }
-   #controls.hidden {
-     opacity: 0;
-     transform: translateY(100%);
-     pointer-events: none;
-   }
-   button, #fileInput {
-     background-color: #001f00;
-     border: 1px solid #0f0;
-     color: #0f0;
-     padding: 10px 20px;
-     text-align: center;
-     text-decoration: none;
-     display: inline-block;
-     font-size: 16px;
-     margin: 4px 2px;
-     cursor: pointer;
-     border-radius: 5px;
-     font-family: 'Courier New', monospace;
-     transition: background-color 0.3s, color 0.3s;
-   }
-   button:hover, #fileInput:hover {
-     background-color: #0f0;
-     color: #000;
-   }
-   #info {
-     text-align: center;
-     margin-top: 10px;
-     font-size: 14px;
-   }
-   #fullscreenBtn, #toggleControlsBtn {
-     position: absolute;
-     background-color: rgba(0, 20, 0, 0.7);
-     z-index: 1000;
-   }
-   #fullscreenBtn {
-     top: 20px;
-     right: 20px;
-   }
-   #toggleControlsBtn {
-     top: 20px;
-     left: 20px;
-   }
-   }
- </style>
- </head>
- <body>
- <div id="container">
-   <div id="viewer">
-     <button id="fullscreenBtn">Fullscreen (F)</button>
-     <button id="toggleControlsBtn">Toggle HUD</button>
-   </div>
-   <div id="controls">
-     <div>
-       <button id="autoRotate">Auto Rotate</button>
-       <button id="reset">Reset View</button>
-       <input type="file" id="fileInput" accept=".png, .jpg, .jpeg", .webp, .webm, .mp4>
-     </div>
-     <div id="info">
-       <p>Explore the skybox. Use mouse/touch to look around.</p>
-       <p>Press 'F' for immersive view. 'Esc' to exit.</p>
-       <p>Upload equirectangular images for custom environment.</p>
-     </div>
-   </div>
- </div>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    background-color: #000;
+    color: #0f0;
+  }
+  #container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  #viewer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  #controls {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background-color: rgba(0, 20, 0, 0.7);
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #0f0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  #controls.hidden {
+    opacity: 0;
+    transform: translateY(100%);
+    pointer-events: none;
+  }
+  button, #fileInput {
+    background-color: #001f00;
+    border: 1px solid #0f0;
+    color: #0f0;
+    padding: 10px 20px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  button:hover, #fileInput:hover {
+    background-color: #0f0;
+    color: #000;
+  }
+  #info {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  #fullscreenBtn, #toggleControlsBtn {
+    position: absolute;
+    background-color: rgba(0, 20, 0, 0.7);
+    z-index: 1000;
+  }
+  #fullscreenBtn {
+    top: 20px;
+    right: 20px;
+  }
+  #toggleControlsBtn {
+    top: 20px;
+    left: 20px;
+  }
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <div id="viewer">
+    <button id="fullscreenBtn">Fullscreen (F)</button>
+    <button id="toggleControlsBtn">Toggle HUD</button>
+  </div>
+  <div id="controls">
+    <div>
+      <button id="autoRotate">Auto Rotate</button>
+      <button id="reset">Reset View</button>
+      <input type="file" id="fileInput" accept=".png, .jpg, .jpeg", .webp, .webm, .mp4>
+    </div>
+    <div id="info">
+      <p>Explore the skybox. Use mouse/touch to look around.</p>
+      <p>Press 'F' for immersive view. 'Esc' to exit.</p>
+      <p>Upload equirectangular images for custom environment.</p>
+    </div>
+  </div>
+</div>
 
- <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
- <script>
- const viewer = document.getElementById('viewer');
- const fileInput = document.getElementById('fileInput');
- const controls = document.getElementById('controls');
- const fullscreenBtn = document.getElementById('fullscreenBtn');
- const toggleControlsBtn = document.getElementById('toggleControlsBtn');
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const viewer = document.getElementById('viewer');
+const fileInput = document.getElementById('fileInput');
+const controls = document.getElementById('controls');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const toggleControlsBtn = document.getElementById('toggleControlsBtn');
 
- let scene, camera, renderer, texture, mesh;
- let isAutoRotating = false;
- let autoRotateSpeed = 0.002;
- const defaultFOV = 75;
+let scene, camera, renderer, texture, mesh;
+let isAutoRotating = false;
+let autoRotateSpeed = 0.002;
+const defaultFOV = 75;
 
- function init() {
-   scene = new THREE.Scene();
-   camera = new THREE.PerspectiveCamera(defaultFOV, viewer.clientWidth / viewer.clientHeight, 0.1, 1000);
-   camera.position.set(0, 0, 0.1);
+function init() {
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(defaultFOV, viewer.clientWidth / viewer.clientHeight, 0.1, 1000);
+  camera.position.set(0, 0, 0.1);
+  
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+  viewer.appendChild(renderer.domElement);
 
-   renderer = new THREE.WebGLRenderer({ antialias: true });
-   renderer.setSize(viewer.clientWidth, viewer.clientHeight);
-   viewer.appendChild(renderer.domElement);
+  loadTexture('https://example.com/abandoned_muse_equirectangular.jpg');
+}
 
-   loadTexture('https://example.com/abandoned_muse_equirectangular.jpg');
- }
+function loadTexture(url) {
+  new THREE.TextureLoader().load(url, (loadedTexture) => {
+    texture = loadedTexture;
+    texture.mapping = THREE.EquirectangularReflectionMapping;
 
- function loadTexture(url) {
-   new THREE.TextureLoader().load(url, (loadedTexture) => {
-     texture = loadedTexture;
-     texture.mapping = THREE.EquirectangularReflectionMapping;
+    const geometry = new THREE.SphereGeometry(100, 60, 40);
+    geometry.scale(-1, 1, 1);
+    
+    const material = new THREE.MeshBasicMaterial({map: texture});
+    
+    if (mesh) {
+      scene.remove(mesh);
+    }
+    
+    mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
 
-     const geometry = new THREE.SphereGeometry(100, 60, 40);
-     geometry.scale(-1, 1, 1);
+    resetView();
+  });
+}
 
-     const material = new THREE.MeshBasicMaterial({map: texture});
+function animate() {
+  requestAnimationFrame(animate);
+  if (isAutoRotating) {
+    camera.rotateY(autoRotateSpeed);
+  }
+  renderer.render(scene, camera);
+}
 
-     if (mesh) {
-       scene.remove(mesh);
-     }
+function onWindowResize() {
+  camera.aspect = viewer.clientWidth / viewer.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+}
 
-     mesh = new THREE.Mesh(geometry, material);
-     scene.add(mesh);
+function toggleAutoRotate() {
+  isAutoRotating = !isAutoRotating;
+  document.getElementById('autoRotate').textContent = isAutoRotating ? 'Stop Rotation' : 'Auto Rotate';
+}
 
-     resetView();
-   });
- }
+function resetView() {
+  camera.position.set(0, 0, 0);
+  camera.rotation.set(0, 0, 0);
+  camera.fov = defaultFOV;
+  camera.updateProjectionMatrix();
+}
 
- function animate() {
-   requestAnimationFrame(animate);
-   if (isAutoRotating) {
-     camera.rotateY(autoRotateSpeed);
-   }
-   renderer.render(scene, camera);
- }
+function updateFOV(newFOV) {
+  camera.fov = newFOV;
+  camera.updateProjectionMatrix();
+}
 
- function onWindowResize() {
-   camera.aspect = viewer.clientWidth / viewer.clientHeight;
-   camera.updateProjectionMatrix();
-   renderer.setSize(viewer.clientWidth, viewer.clientHeight);
- }
+document.getElementById('autoRotate').addEventListener('click', toggleAutoRotate);
+document.getElementById('reset').addEventListener('click', resetView);
+fileInput.addEventListener('change', handleFileUpload);
+window.addEventListener('resize', onWindowResize);
 
- function toggleAutoRotate() {
-   isAutoRotating = !isAutoRotating;
-   document.getElementById('autoRotate').textContent = isAutoRotating ? 'Stop Rotation' : 'Auto Rotate';
- }
+let isUserInteracting = false;
+let onPointerDownMouseX = 0, onPointerDownMouseY = 0;
+let lon = 0, onPointerDownLon = 0;
+let lat = 0, onPointerDownLat = 0;
+let phi = 0, theta = 0;
 
- function resetView() {
-   camera.position.set(0, 0, 0);
-   camera.rotation.set(0, 0, 0);
-   camera.fov = defaultFOV;
-   camera.updateProjectionMatrix();
- }
+function onPointerDown(event) {
+  isUserInteracting = true;
+  const clientX = event.clientX || event.touches[0].clientX;
+  const clientY = event.clientY || event.touches[0].clientY;
+  onPointerDownMouseX = clientX;
+  onPointerDownMouseY = clientY;
+  onPointerDownLon = lon;
+  onPointerDownLat = lat;
+}
 
- function updateFOV(newFOV) {
-   camera.fov = newFOV;
-   camera.updateProjectionMatrix();
- }
+function onPointerMove(event) {
+  if (isUserInteracting) {
+    const clientX = event.clientX || event.touches[0].clientX;
+    const clientY = event.clientY || event.touches[0].clientY;
+    lon = (onPointerDownMouseX - clientX) * 0.1 + onPointerDownLon;
+    lat = (clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
+    updateCameraRotation();
+  }
+}
 
- document.getElementById('autoRotate').addEventListener('click', toggleAutoRotate);
- document.getElementById('reset').addEventListener('click', resetView);
- fileInput.addEventListener('change', handleFileUpload);
- window.addEventListener('resize', onWindowResize);
+function onPointerUp() {
+  isUserInteracting = false;
+}
 
- let isUserInteracting = false;
- let onPointerDownMouseX = 0, onPointerDownMouseY = 0;
- let lon = 0, onPointerDownLon = 0;
- let lat = 0, onPointerDownLat = 0;
- let phi = 0, theta = 0;
+function updateCameraRotation() {
+  lat = Math.max(-85, Math.min(85, lat));
+  phi = THREE.MathUtils.degToRad(90 - lat);
+  theta = THREE.MathUtils.degToRad(lon);
+  camera.target = new THREE.Vector3(
+    500 * Math.sin(phi) * Math.cos(theta),
+    500 * Math.cos(phi),
+    500 * Math.sin(phi) * Math.sin(theta)
+  );
+  camera.lookAt(camera.target);
+}
 
- function onPointerDown(event) {
-   isUserInteracting = true;
-   const clientX = event.clientX || event.touches[0].clientX;
-   const clientY = event.clientY || event.touches[0].clientY;
-   onPointerDownMouseX = clientX;
-   onPointerDownMouseY = clientY;
-   onPointerDownLon = lon;
-   onPointerDownLat = lat;
- }
+viewer.addEventListener('mousedown', onPointerDown);
+viewer.addEventListener('mousemove', onPointerMove);
+viewer.addEventListener('mouseup', onPointerUp);
+viewer.addEventListener('touchstart', onPointerDown);
+viewer.addEventListener('touchmove', onPointerMove);
+viewer.addEventListener('touchend', onPointerUp);
 
- function onPointerMove(event) {
-   if (isUserInteracting) {
-     const clientX = event.clientX || event.touches[0].clientX;
-     const clientY = event.clientY || event.touches[0].clientY;
-     lon = (onPointerDownMouseX - clientX) * 0.1 + onPointerDownLon;
-     lat = (clientY - onPointerDownMouseY) * 0.1 + onPointerDownLat;
-     updateCameraRotation();
-   }
- }
+function handleFileUpload(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      loadTexture(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+}
 
- function onPointerUp() {
-   isUserInteracting = false;
- }
+function toggleFullScreen() {
+  if (!document.fullscreenElement) {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+}
 
- function updateCameraRotation() {
-   lat = Math.max(-85, Math.min(85, lat));
-   phi = THREE.MathUtils.degToRad(90 - lat);
-   theta = THREE.MathUtils.degToRad(lon);
-   camera.target = new THREE.Vector3(
-     500 * Math.sin(phi) * Math.cos(theta),
-     500 * Math.cos(phi),
-     500 * Math.sin(phi) * Math.sin(theta)
-   );
-   camera.lookAt(camera.target);
- }
+fullscreenBtn.addEventListener('click', toggleFullScreen);
 
- viewer.addEventListener('mousedown', onPointerDown);
- viewer.addEventListener('mousemove', onPointerMove);
- viewer.addEventListener('mouseup', onPointerUp);
- viewer.addEventListener('touchstart', onPointerDown);
- viewer.addEventListener('touchmove', onPointerMove);
- viewer.addEventListener('touchend', onPointerUp);
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'f' || event.key === 'F') {
+    toggleFullScreen();
+  }
+});
 
- function handleFileUpload(event) {
-   const file = event.target.files[0];
-   if (file) {
-     const reader = new FileReader();
-     reader.onload = function(e) {
-       loadTexture(e.target.result);
-     };
-     reader.readAsDataURL(file);
-   }
- }
+function toggleControls() {
+  controls.classList.toggle('hidden');
+}
 
- function toggleFullScreen() {
-   if (!document.fullscreenElement) {
-     if (document.documentElement.requestFullscreen) {
-       document.documentElement.requestFullscreen();
-     }
-   } else {
-     if (document.exitFullscreen) {
-       document.exitFullscreen();
-     }
-   }
- }
+toggleControlsBtn.addEventListener('click', toggleControls);
 
- fullscreenBtn.addEventListener('click', toggleFullScreen);
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) {
+    controls.classList.add('hidden');
+  } else {
+    controls.classList.remove('hidden');
+  }
+});
 
- document.addEventListener('keydown', (event) => {
-   if (event.key === 'f' || event.key === 'F') {
-     toggleFullScreen();
-   }
- });
+if (window.DeviceOrientationEvent) {
+  window.addEventListener('deviceorientation', handleOrientation);
+}
 
- function toggleControls() {
-   controls.classList.toggle('hidden');
- }
+function handleOrientation(event) {
+  if (event.alpha && event.beta && event.gamma) {
+    const x = THREE.MathUtils.degToRad(event.beta);
+    const y = THREE.MathUtils.degToRad(event.gamma);
+    const z = THREE.MathUtils.degToRad(event.alpha);
 
- toggleControlsBtn.addEventListener('click', toggleControls);
+    camera.quaternion.setFromEuler(new THREE.Euler(x, y, -z, 'YXZ'));
+  }
+}
 
- document.addEventListener('fullscreenchange', () => {
-   if (document.fullscreenElement) {
-     controls.classList.add('hidden');
-   } else {
-     controls.classList.remove('hidden');
-   }
- });
+init();
+animate();
 
- if (window.DeviceOrientationEvent) {
-   window.addEventListener('deviceorientation', handleOrientation);
- }
-
- function handleOrientation(event) {
-   if (event.alpha && event.beta && event.gamma) {
-     const x = THREE.MathUtils.degToRad(event.beta);
-     const y = THREE.MathUtils.degToRad(event.gamma);
-     const z = THREE.MathUtils.degToRad(event.alpha);
-
-     camera.quaternion.setFromEuler(new THREE.Euler(x, y, -z, 'YXZ'));
-   }
- }
-
- init();
- animate();
-
- init();
- animate();
- </script>
- </body></html>
+init();
+animate();
+</script>
+</body></html>
