@@ -60,3 +60,4 @@ Both applications require a modern web browser with JavaScript enabled.
 - Zoom In/Out: Dedicated buttons
 
 For more detailed information, please refer to the wiki page.
+[Enjoy the app? Wanna buy me a coffee](https://www.paypal.com/paypalme/musephotos)
